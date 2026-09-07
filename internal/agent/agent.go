@@ -95,7 +95,25 @@ const (
 	EventToolResult = "tool.result"
 	EventToolError  = "tool.error"
 	EventNote       = "note"
+	// EventPrompt — что именно получает модель на старте агента: системный
+	// промпт, первое сообщение и описания инструментов. В Detail лежит JSON
+	// вида Prompt; интерфейс показывает его отдельной панелью, а не в ленте.
+	EventPrompt = "prompt"
 )
+
+// Prompt — содержимое события EventPrompt.
+type Prompt struct {
+	System string       `json:"system"`
+	User   string       `json:"user"`
+	Tools  []PromptTool `json:"tools"`
+}
+
+// PromptTool — инструмент, доступный агенту, как он описан модели.
+type PromptTool struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Final       bool   `json:"final"`
+}
 
 // Event — запись журнала. Title — одна строка для ленты, Detail — текст
 // под ней (аргументы, результат инструмента, ответ модели), Usage и Cost
@@ -134,5 +152,5 @@ type Agent interface {
 // где журнал не нужен.
 type Nop struct{}
 
-func (Nop) Log(Event)       {}
+func (Nop) Log(Event)      {}
 func (Nop) Partial(Result) {}

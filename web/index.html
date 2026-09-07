@@ -82,6 +82,16 @@
         <ol class="log" id="log"></ol>
         <div class="totals" id="totals"></div>
       </div>
+
+      <!-- Промпты: что получила модель на старте каждого агента. Отдельно от
+           журнала: это не события, а условия задачи, и они длинные. -->
+      <div class="panel prompts-panel">
+        <div class="section-head">
+          <h2>Промпты</h2>
+          <span class="section-note" id="prompts-note">системный промпт, первое сообщение и инструменты каждого агента</span>
+        </div>
+        <div id="prompts" class="prompts"></div>
+      </div>
     </section>
   </main>
 

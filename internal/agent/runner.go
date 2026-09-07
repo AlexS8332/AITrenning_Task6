@@ -90,6 +90,10 @@ func (r Runner) Run(ctx context.Context, spec Spec, user string, em Emitter) (Re
 		defs = append(defs, llm.NewToolDef(f.Name, f.Description, f.Parameters))
 	}
 
+	em.Log(Event{Agent: spec.Name, Kind: EventPrompt,
+		Title:  "промпт агента " + spec.Name,
+		Detail: promptDetail(spec, user)})
+
 	var stats Stats
 	reminders := 0
 
@@ -192,6 +196,23 @@ func (r Runner) Run(ctx context.Context, spec Spec, user string, em Emitter) (Re
 	}
 
 	return Result{}, stats, fmt.Errorf("%w (%d)", ErrStepLimit, spec.MaxSteps)
+}
+
+// promptDetail собирает, что уходит модели на старте: промпты и описания
+// инструментов в том же виде, в каком их получает модель.
+func promptDetail(spec Spec, user string) string {
+	p := Prompt{System: spec.System, User: user, Tools: []PromptTool{}}
+	for _, t := range spec.Tools {
+		p.Tools = append(p.Tools, PromptTool{Name: t.Name(), Description: t.Description()})
+	}
+	for _, f := range spec.Finish {
+		p.Tools = append(p.Tools, PromptTool{Name: f.Name, Description: f.Description, Final: true})
+	}
+	data, err := json.Marshal(p)
+	if err != nil {
+		return spec.System + "\n\n" + user
+	}
+	return string(data)
 }
 
 func toolReply(callID, content string) llm.Message {

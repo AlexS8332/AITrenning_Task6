@@ -1,6 +1,7 @@
 package runs
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -125,8 +126,46 @@ func RenderReport(view View, events []agent.Event) string {
 	if t.Cost.Known {
 		fmt.Fprintf(&b, "- Стоимость: %s (%s тариф)\n", FormatUSD(t.Cost.USD), t.Cost.Tariff)
 	}
-	b.WriteString("\n### Журнал\n\n")
+	b.WriteString("\n### Промпты\n\n")
+	b.WriteString(renderPrompts(events))
+	b.WriteString("### Журнал\n\n")
 	b.WriteString(renderLog(view, events))
+	return b.String()
+}
+
+// renderPrompts — что получала модель на старте каждого агента: системный
+// промпт, первое сообщение, инструменты. Промпты свёрнуты: они длинные и
+// повторяются от прогона к прогону, а читать файл приходят за результатом.
+func renderPrompts(events []agent.Event) string {
+	var b strings.Builder
+	for _, ev := range events {
+		if ev.Kind != agent.EventPrompt {
+			continue
+		}
+		var p agent.Prompt
+		if err := json.Unmarshal([]byte(ev.Detail), &p); err != nil {
+			fmt.Fprintf(&b, "**%s**\n\n```\n%s\n```\n\n", ev.Agent, strings.TrimSpace(ev.Detail))
+			continue
+		}
+		fmt.Fprintf(&b, "<details>\n<summary>Агент %s</summary>\n\n", ev.Agent)
+		fmt.Fprintf(&b, "Сообщение `system`:\n\n```\n%s\n```\n\n", strings.TrimSpace(p.System))
+		fmt.Fprintf(&b, "Сообщение `user`:\n\n```\n%s\n```\n\n", strings.TrimSpace(p.User))
+		if len(p.Tools) > 0 {
+			b.WriteString("Инструменты:\n\n")
+			for _, t := range p.Tools {
+				mark := ""
+				if t.Final {
+					mark = " (завершающий)"
+				}
+				fmt.Fprintf(&b, "- `%s`%s — %s\n", t.Name, mark, t.Description)
+			}
+			b.WriteString("\n")
+		}
+		b.WriteString("</details>\n\n")
+	}
+	if b.Len() == 0 {
+		return "Промптов нет.\n\n"
+	}
 	return b.String()
 }
 
@@ -202,19 +241,24 @@ func renderCard(c *agent.Card) string {
 }
 
 func renderLog(view View, events []agent.Event) string {
-	if len(events) == 0 {
-		return "Журнал пуст.\n"
-	}
 	var b strings.Builder
 	b.WriteString("| # | Время | Агент | Событие | Что произошло | Токены |\n")
 	b.WriteString("|---|---|---|---|---|---|\n")
+	rows := 0
 	for _, ev := range events {
+		if ev.Kind == agent.EventPrompt {
+			continue // промпты в своём разделе
+		}
 		tokens := ""
 		if ev.Usage != nil {
 			tokens = fmt.Sprintf("%d / %d", ev.Usage.Prompt, ev.Usage.Completion)
 		}
 		fmt.Fprintf(&b, "| %d | +%.1f с | %s | %s | %s | %s |\n",
 			ev.Seq, ev.Time.Sub(view.Started).Seconds(), ev.Agent, ev.Kind, cell(ev.Title), tokens)
+		rows++
+	}
+	if rows == 0 {
+		return "Журнал пуст.\n"
 	}
 	return b.String()
 }

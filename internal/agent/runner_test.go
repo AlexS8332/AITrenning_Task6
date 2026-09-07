@@ -119,10 +119,20 @@ func TestRunnerToolLoop(t *testing.T) {
 		t.Errorf("стоимость известной модели должна считаться")
 	}
 
-	want := []string{EventLLMRequest, EventLLMReply, EventToolCall, EventToolResult,
+	want := []string{EventPrompt, EventLLMRequest, EventLLMReply, EventToolCall, EventToolResult,
 		EventLLMRequest, EventLLMReply, EventToolCall, EventToolResult}
 	if got := rec.kinds(); strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("события: %v", got)
+	}
+
+	// Событие промпта несёт то, что получила модель: роль, сообщение,
+	// инструменты с пометкой завершающих.
+	var p Prompt
+	if err := json.Unmarshal([]byte(rec.events[0].Detail), &p); err != nil {
+		t.Fatalf("промпт не JSON: %v", err)
+	}
+	if p.System != "s" || p.User != "привет" || len(p.Tools) != 2 || p.Tools[0].Name != "echo" || !p.Tools[1].Final {
+		t.Errorf("промпт: %+v", p)
 	}
 }
 
@@ -145,7 +155,7 @@ func TestRunnerFinisherRejectsThenAccepts(t *testing.T) {
 		t.Errorf("результат %+v, статистика %+v", res, stats)
 	}
 	kinds := rec.kinds()
-	if kinds[3] != EventToolError {
+	if kinds[4] != EventToolError {
 		t.Errorf("отказ должен попасть в журнал: %v", kinds)
 	}
 }

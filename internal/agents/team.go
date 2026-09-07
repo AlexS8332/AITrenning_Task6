@@ -60,7 +60,7 @@ func (t *Team) Run(ctx context.Context, task agent.Task, em agent.Emitter) (agen
 	}
 	if res.Kind == agent.KindNone {
 		em.Log(agent.Event{Agent: t.Name(), Kind: agent.EventAgentDone,
-			Title: "идентификатор не нашёл животное, специалисты не запускались",
+			Title:   "идентификатор не нашёл животное, специалисты не запускались",
 			Seconds: time.Since(started).Seconds()})
 		return res, nil
 	}

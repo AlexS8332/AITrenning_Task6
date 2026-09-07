@@ -100,6 +100,8 @@ func sampleView() (View, []agent.Event) {
 	events := []agent.Event{
 		{Seq: 1, Time: started, Agent: "identifier", Kind: agent.EventAgentStart, Title: "старт | с чертой"},
 		{Seq: 2, Time: started.Add(2 * time.Second), Agent: "identifier", Kind: agent.EventLLMReply, Title: "ответ", Usage: &usage},
+		{Seq: 3, Time: started, Agent: "identifier", Kind: agent.EventPrompt, Title: "промпт",
+			Detail: `{"system":"Ты идентификатор.","user":"Найди статью о животном.","tools":[{"name":"search_wikipedia","description":"поиск"},{"name":"submit_taxon","description":"отдать","final":true}]}`},
 	}
 	return view, events
 }
@@ -123,10 +125,23 @@ func TestRenderReport(t *testing.T) {
 		"- Стоимость: $0.001200 (непиковый тариф)",
 		"| 1 | +0.0 с | identifier | agent.start | старт \\| с чертой |  |",
 		"| 2 | +2.0 с | identifier | llm.response | ответ | 100 / 20 |",
+		"<summary>Агент identifier</summary>",
+		"```\nТы идентификатор.\n```",
+		"```\nНайди статью о животном.\n```",
+		"- `submit_taxon` (завершающий) — отдать",
 	} {
 		if !strings.Contains(text, want) {
 			t.Errorf("в отчёте нет %q\n%s", want, text)
 		}
+	}
+	if strings.Contains(text, "| 3 |") {
+		t.Errorf("промпт не должен попадать в таблицу журнала")
+	}
+	if !strings.Contains(renderPrompts(nil), "Промптов нет") {
+		t.Errorf("пустые промпты")
+	}
+	if got := renderPrompts([]agent.Event{{Agent: "x", Kind: agent.EventPrompt, Detail: "не json"}}); !strings.Contains(got, "**x**") || !strings.Contains(got, "не json") {
+		t.Errorf("промпт не в JSON должен печататься как есть: %q", got)
 	}
 	if !strings.Contains(RenderResult(&agent.Result{Kind: agent.KindNone, Text: "выдумка"}), "**Сведений нет.** выдумка") {
 		t.Errorf("результат «нет»")

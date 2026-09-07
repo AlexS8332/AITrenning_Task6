@@ -252,6 +252,46 @@ button:disabled { opacity: .55; cursor: default; }
 [data-agent="solo"] { --color: var(--a-solo); }
 [data-agent="chat"] { --color: var(--a-chat); }
 
+/* Промпты под обеими панелями, на всю ширину. Каждый агент свёрнут:
+   промпты длинные и нужны реже результата. */
+.prompts-panel { grid-column: 1 / -1; }
+.prompts .empty { color: var(--muted); }
+.prompt {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  margin-bottom: 8px;
+  padding: 8px 12px;
+}
+.prompt summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; }
+.prompt summary .agent {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0 6px;
+  border-radius: 5px;
+  color: var(--panel);
+  background: var(--color, var(--a-chat));
+}
+.prompt summary .meta { color: var(--muted); font-size: 13px; }
+.prompt h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 12px 0 4px; }
+.prompt pre {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 420px;
+  overflow: auto;
+}
+.prompt ul { margin: 0; padding-left: 18px; font-size: 13px; }
+.prompt li code { font-family: var(--mono); font-size: 12px; }
+.prompt li .final { color: var(--accent); font-size: 12px; }
+
 .totals {
   margin-top: 10px;
   font-family: var(--mono);

@@ -123,13 +123,13 @@ func userMessage(task agent.Task) string {
 // проходит, даже если выглядит правдоподобно.
 type tracker struct {
 	mu       sync.Mutex
-	matched  map[string]int              // латынь в нижнем регистре → usage_key
-	ranks    map[int]string              // usage_key → ранг из GBIF
-	trees    map[int][]agent.TaxonNode   // usage_key → дерево из GBIF
-	articles map[string]string           // заголовок статьи в нижнем регистре → URL
-	titles   map[string]string           // заголовок в нижнем регистре → как он написан в статье
-	lists    map[string][]string         // заголовок статьи → оглавление
-	sections map[string]map[string]bool  // заголовок статьи → прочитанные разделы
+	matched  map[string]int             // латынь в нижнем регистре → usage_key
+	ranks    map[int]string             // usage_key → ранг из GBIF
+	trees    map[int][]agent.TaxonNode  // usage_key → дерево из GBIF
+	articles map[string]string          // заголовок статьи в нижнем регистре → URL
+	titles   map[string]string          // заголовок в нижнем регистре → как он написан в статье
+	lists    map[string][]string        // заголовок статьи → оглавление
+	sections map[string]map[string]bool // заголовок статьи → прочитанные разделы
 }
 
 func newTracker() *tracker {

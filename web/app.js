@@ -29,6 +29,7 @@ const el = {
   showLLM: document.getElementById('show-llm'),
   log: document.getElementById('log'),
   totals: document.getElementById('totals'),
+  prompts: document.getElementById('prompts'),
   reportPath: document.getElementById('report-path'),
   reportButton: document.getElementById('report-button'),
   reportDialog: document.getElementById('report-dialog'),
@@ -46,7 +47,8 @@ const KIND_LABEL = {
   'tool.call': 'инструмент ←',
   'tool.result': 'инструмент →',
   'tool.error': 'инструмент ✕',
-  'note': 'заметка'
+  'note': 'заметка',
+  'prompt': 'промпт'
 };
 
 async function init() {
@@ -143,8 +145,15 @@ function attach(id) {
   if (state.source) state.source.close();
   state.view = null;
   state.events = [];
+  // Фильтр по агенту принадлежит прогону: у следующего прогона другой
+  // набор агентов, и выбранный раньше «identifier» спрятал бы весь журнал
+  // одиночного агента.
+  state.filter.agent = 'all';
+  chipsKey = '';
+  el.agentChips.innerHTML = '';
   el.log.innerHTML = '';
   el.result.innerHTML = '';
+  el.prompts.innerHTML = '';
   el.work.hidden = false;
   el.runButton.disabled = true;
 
@@ -156,6 +165,7 @@ function attach(id) {
     state.view = snap.view;
     state.events = [];
     el.log.innerHTML = '';
+    el.prompts.innerHTML = '';
     for (const ev of snap.events || []) appendEvent(ev);
     renderState();
   });
@@ -365,6 +375,10 @@ function rankRu(rank) { return RANKS[String(rank).toUpperCase()] || String(rank)
 /* ---------- Журнал ---------- */
 
 function appendEvent(ev) {
+  if (ev.kind === 'prompt') {
+    appendPrompt(ev);
+    return;
+  }
   state.events.push(ev);
   const li = document.createElement('li');
   li.className = 'entry ' + ev.kind;
@@ -429,6 +443,73 @@ function appendEvent(ev) {
   renderChips();
 }
 
+/* ---------- Промпты ---------- */
+
+// appendPrompt показывает, что получила модель на старте агента. Событие
+// в ленту не попадает: это условия задачи, а не ход работы.
+function appendPrompt(ev) {
+  let p = null;
+  try { p = JSON.parse(ev.detail); } catch (_) { p = null; }
+
+  const box = document.createElement('details');
+  box.className = 'prompt';
+  box.dataset.agent = ev.agent;
+
+  const summary = document.createElement('summary');
+  const agent = document.createElement('span');
+  agent.className = 'agent';
+  agent.textContent = ev.agent;
+  summary.appendChild(agent);
+  const meta = document.createElement('span');
+  meta.className = 'meta';
+  const tools = p && p.tools ? p.tools : [];
+  meta.textContent = tools.length
+    ? 'инструментов: ' + tools.length + ' · ' + tools.map((t) => t.name).join(', ')
+    : 'без инструментов';
+  summary.appendChild(meta);
+  box.appendChild(summary);
+
+  if (!p) {
+    const pre = document.createElement('pre');
+    pre.textContent = ev.detail || '';
+    box.appendChild(pre);
+  } else {
+    promptBlock(box, 'Сообщение system', p.system);
+    promptBlock(box, 'Сообщение user', p.user);
+    if (tools.length) {
+      const h = document.createElement('h4');
+      h.textContent = 'Инструменты, как они описаны модели';
+      box.appendChild(h);
+      const ul = document.createElement('ul');
+      for (const t of tools) {
+        const li = document.createElement('li');
+        const code = document.createElement('code');
+        code.textContent = t.name;
+        li.appendChild(code);
+        if (t.final) {
+          const f = document.createElement('span');
+          f.className = 'final';
+          f.textContent = ' завершающий';
+          li.appendChild(f);
+        }
+        li.appendChild(document.createTextNode(' — ' + (t.description || '')));
+        ul.appendChild(li);
+      }
+      box.appendChild(ul);
+    }
+  }
+  el.prompts.appendChild(box);
+}
+
+function promptBlock(box, title, text) {
+  const h = document.createElement('h4');
+  h.textContent = title;
+  box.appendChild(h);
+  const pre = document.createElement('pre');
+  pre.textContent = text || '';
+  box.appendChild(pre);
+}
+
 function offsetSeconds(time) {
   if (!state.view) return 0;
   return Math.max(0, (new Date(time) - new Date(state.view.started)) / 1000);
@@ -457,7 +538,12 @@ function renderChips() {
   const seen = new Set(state.events.map((e) => e.agent));
   const names = (info ? info.agents : []).filter((a) => seen.has(a));
   for (const a of seen) if (!names.includes(a)) names.push(a);
-  if (names.length < 2) { el.agentChips.innerHTML = ''; chipsKey = ''; return; }
+  if (names.length < 2) {
+    el.agentChips.innerHTML = '';
+    chipsKey = '';
+    if (state.filter.agent !== 'all') { state.filter.agent = 'all'; applyFilter(); }
+    return;
+  }
 
   const key = names.join('|');
   if (key === chipsKey) return;
