@@ -1,0 +1,26 @@
+# Секреты
+.env
+.env.local
+*.env.local
+
+# Сборка
+/bin/
+*.exe
+*.test
+*.out
+
+# ОС и редакторы
+Thumbs.db
+.DS_Store
+.idea/
+
+# Локальные метаданные рабочего окружения
+assignment.json
+
+# Результаты прогонов и логи сервера. Слэш в начале оставляет правило только
+# на рабочий файл — пример в examples/ нужен в git.
+/results.md
+server.*.log
+
+# Отладочные бинарники VS Code / dlv
+__debug_bin*

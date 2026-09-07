@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Агент-справочник по животным</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/vendor/marked/marked.min.js"></script>
+</head>
+<body>
+  <header class="top">
+    <h1>Агент-справочник по животным</h1>
+    <p class="lead">
+      Агент ищет сведения о животном по источникам: статья в Википедии и таксономическая
+      база GBIF. Результат и журнал работы агента показаны раздельно.
+    </p>
+    <dl class="facts">
+      <div><dt>Файл результатов</dt><dd id="report-path">—</dd></div>
+    </dl>
+  </header>
+
+  <main>
+    <section class="panel" id="ask">
+      <div class="section-head">
+        <h2>Запрос</h2>
+        <span class="section-note">какое животное, каким агентом и что искать</span>
+      </div>
+
+      <div class="ask-grid">
+        <label class="field">
+          <span class="field-label">Название животного</span>
+          <input type="text" id="query" spellcheck="false" autocomplete="off"
+            placeholder="рысь, обыкновенный ёж, полосатый манул…">
+        </label>
+
+        <label class="field">
+          <span class="field-label">Агент</span>
+          <select id="agent"></select>
+          <span class="agent-note" id="agent-note"></span>
+        </label>
+      </div>
+
+      <fieldset class="options">
+        <legend>Что искать</legend>
+        <label class="check"><input type="checkbox" id="opt-classification" checked> <span>Классификационное дерево</span> <em>GBIF: от царства до вида</em></label>
+        <label class="check"><input type="checkbox" id="opt-habitat" checked> <span>Среда обитания</span> <em>раздел статьи об ареале</em></label>
+        <label class="check"><input type="checkbox" id="opt-diet" checked> <span>Питание</span> <em>раздел статьи о питании</em></label>
+      </fieldset>
+
+      <div class="controls">
+        <span class="hint inline">Ctrl+Enter — тоже запуск. Прогон идёт на сервере; страницу можно перезагрузить.</span>
+        <div class="buttons">
+          <button type="button" id="report-button" class="secondary">Показать отчёт</button>
+          <button type="button" id="run-button" class="primary">Запустить агента</button>
+        </div>
+      </div>
+      <p class="error" id="ask-error" hidden></p>
+    </section>
+
+    <section class="work" id="work" hidden>
+      <!-- Две панели. Результат слева, журнал справа; обновляются по разным
+           событиям потока и не знают друг о друге. -->
+      <div class="panel result-panel">
+        <div class="section-head">
+          <h2>Результат</h2>
+          <span class="status" id="result-status"></span>
+        </div>
+        <div id="result" class="result"></div>
+      </div>
+
+      <div class="panel log-panel">
+        <div class="section-head">
+          <h2>Журнал</h2>
+          <span class="section-note" id="log-count"></span>
+        </div>
+        <div class="log-filters">
+          <div class="chips" id="agent-chips" role="group" aria-label="Агенты"></div>
+          <label class="check small"><input type="checkbox" id="show-tools" checked> инструменты</label>
+          <label class="check small"><input type="checkbox" id="show-llm" checked> модель</label>
+        </div>
+        <ol class="log" id="log"></ol>
+        <div class="totals" id="totals"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="report-dialog">
+    <div class="dialog-head">
+      <h2>Файл результатов</h2>
+      <button type="button" id="report-close" class="secondary">Закрыть</button>
+    </div>
+    <p class="hint" id="report-file">—</p>
+    <div class="markdown" id="report-body"></div>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>
